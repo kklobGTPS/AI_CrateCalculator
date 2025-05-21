@@ -1,28 +1,17 @@
+
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 
 const PLYWOOD_THICKNESS = 0.625; // 5/8 inches
 const TWOBYFOUR_NOMINAL_THICKNESS = 2; // inches
 const TWOBYFOUR_NOMINAL_WIDTH = 4; // inches
-// const TWOBYFOUR_ACTUAL_WIDTH_FOR_FEET = 3.5; // inches (height contribution of feet) - Not directly used in output, but feet exist
 const SKID_PLYWOOD_WIDTH = 3.5; // inches (assumed width of plywood skids)
 
 const PLYWOOD_WEIGHT_PER_SQ_FT = 1.8; // lbs
 const TWOBYFOUR_WEIGHT_PER_LINEAL_FOOT = 1.3; // lbs
 
-interface BracingPiece {
-  id: string;
-  length: number;
-  quantity: number;
-}
-
-interface CrateOutputs {
-  projTotalWeight: number;
-  boardFootage: number;
-}
-
 // Helper function to parse mixed fractions
-function parseMixedFraction(inputStr: string): number {
+function parseMixedFraction(inputStr) {
   const str = inputStr.trim();
   if (str === '') return NaN;
 
@@ -55,21 +44,21 @@ function parseMixedFraction(inputStr: string): number {
 }
 
 
-const App: React.FC = () => {
-  const [internalL, setInternalL] = useState<string>('');
-  const [internalW, setInternalW] = useState<string>('');
-  const [internalH, setInternalH] = useState<string>('');
-  const [cargoWeight, setCargoWeight] = useState<string>('');
+const App = () => {
+  const [internalL, setInternalL] = useState('');
+  const [internalW, setInternalW] = useState('');
+  const [internalH, setInternalH] = useState('');
+  const [cargoWeight, setCargoWeight] = useState('');
 
-  const [bracingLength, setBracingLength] = useState<string>('');
-  const [bracingQuantity, setBracingQuantity] = useState<string>('');
-  const [bracingList, setBracingList] = useState<BracingPiece[]>([]);
+  const [bracingLength, setBracingLength] = useState('');
+  const [bracingQuantity, setBracingQuantity] = useState('');
+  const [bracingList, setBracingList] = useState([]);
 
-  const [outputs, setOutputs] = useState<CrateOutputs | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [outputs, setOutputs] = useState(null);
+  const [errors, setErrors] = useState({});
 
-  const validateInputs = (): boolean => {
-    const newErrors: Record<string, string> = {};
+  const validateInputs = () => {
+    const newErrors = {};
     const parsedL = parseMixedFraction(internalL);
     const parsedW = parseMixedFraction(internalW);
     const parsedH = parseMixedFraction(internalH);
@@ -94,7 +83,7 @@ const App: React.FC = () => {
   const handleAddBracing = () => {
     const length = parseMixedFraction(bracingLength);
     const quantity = parseInt(bracingQuantity, 10);
-    const newBracingErrors: Record<string, string> = {};
+    const newBracingErrors = {};
 
     if (isNaN(length) || length <= 0) newBracingErrors.bracingLength = "Length must be a positive number or fraction.";
     if (isNaN(quantity) || quantity <= 0) newBracingErrors.bracingQuantity = "Quantity must be a positive integer.";
@@ -110,11 +99,11 @@ const App: React.FC = () => {
     setErrors(prev => ({...prev, bracingLength: undefined, bracingQuantity: undefined}));
   };
 
-  const handleRemoveBracing = (id: string) => {
+  const handleRemoveBracing = (id) => {
     setBracingList(bracingList.filter(piece => piece.id !== id));
   };
 
-  const handleCalculate = (e: FormEvent) => {
+  const handleCalculate = (e) => {
     e.preventDefault();
     // Clear previous calculation errors before re-validating
     setErrors(prev => {
@@ -197,8 +186,8 @@ const App: React.FC = () => {
     setErrors({});
   };
 
-  const createInputHandler = (setter: React.Dispatch<React.SetStateAction<string>>, fieldName?: keyof typeof errors) => 
-    (e: ChangeEvent<HTMLInputElement>) => {
+  const createInputHandler = (setter, fieldName) => 
+    (e) => {
       setter(e.target.value);
       if (fieldName && errors[fieldName]) {
         setErrors(prev => ({...prev, [fieldName]: undefined }));
