@@ -1,5 +1,5 @@
 
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 const PLYWOOD_THICKNESS = 0.625; // 5/8 inches
@@ -12,7 +12,7 @@ const TWOBYFOUR_WEIGHT_PER_LINEAL_FOOT = 1.3; // lbs
 
 // Helper function to parse mixed fractions
 function parseMixedFraction(inputStr) {
-  const str = inputStr.trim();
+  const str = String(inputStr).trim(); // Ensure inputStr is treated as a string
   if (str === '') return NaN;
 
   // Check for mixed fraction: "INT SPACE FRACTION" e.g., "10 3/4"
@@ -76,8 +76,15 @@ const App = () => {
     
     setErrors(prev => ({...prev, ...newErrors})); // Merge with existing bracing errors
     // Check only main dimension errors for overall validation pass
-    const mainDimensionErrors = ['internalL', 'internalW', 'internalH', 'cargoWeight'].some(key => newErrors[key]);
-    return !mainDimensionErrors && Object.values(errors).every(err => !err); // Ensure no existing errors persist
+    const mainDimensionErrorKeys = ['internalL', 'internalW', 'internalH', 'cargoWeight'];
+    const hasMainDimensionErrors = mainDimensionErrorKeys.some(key => newErrors[key]);
+    
+    // Ensure no existing errors persist outside of what's being actively validated (for main dimensions)
+    // Bracing errors are handled separately
+    const currentErrorsCopy = {...errors, ...newErrors};
+    const allErrorsResolved = !mainDimensionErrorKeys.some(key => currentErrorsCopy[key]);
+
+    return !hasMainDimensionErrors && allErrorsResolved; 
   };
 
   const handleAddBracing = () => {
@@ -90,7 +97,8 @@ const App = () => {
     
     setErrors(prev => ({...prev, bracingLength: newBracingErrors.bracingLength, bracingQuantity: newBracingErrors.bracingQuantity}));
 
-    if (Object.keys(newBracingErrors).length > 0) return;
+    if (Object.keys(newBracingErrors).some(key => newBracingErrors[key])) return;
+
 
     setBracingList([...bracingList, { id: Date.now().toString(), length, quantity }]);
     setBracingLength('');
@@ -105,7 +113,7 @@ const App = () => {
 
   const handleCalculate = (e) => {
     e.preventDefault();
-    // Clear previous calculation errors before re-validating
+    // Clear previous calculation errors for main dimensions before re-validating
     setErrors(prev => {
         const clearedCalcErrors = {...prev};
         delete clearedCalcErrors.internalL;
@@ -123,17 +131,22 @@ const App = () => {
     const L = parseMixedFraction(internalL);
     const W = parseMixedFraction(internalW);
     const H = parseMixedFraction(internalH);
-    // If cargoWeight is empty or invalid, default to 0. Validation should catch invalid.
     const initialCargoWeight = parseFloat(cargoWeight) || 0;
 
-    if (isNaN(L) || isNaN(W) || isNaN(H)) { // Should be caught by validateInputs, but as a safeguard
+    if (isNaN(L) || isNaN(W) || isNaN(H)) { 
         setOutputs(null);
+        // This case should ideally be caught by validateInputs, but as a safeguard:
+        const newValidationErrors = {};
+        if (isNaN(L)) newValidationErrors.internalL = "Invalid length.";
+        if (isNaN(W)) newValidationErrors.internalW = "Invalid width.";
+        if (isNaN(H)) newValidationErrors.internalH = "Invalid height.";
+        setErrors(prev => ({...prev, ...newValidationErrors}));
         return;
     }
 
     // Plywood Box outer footprint dimensions (used for feet, skids, and top/bottom plywood)
-    const plywoodBoxL = L; // Length is 'clean'
-    const plywoodBoxW = W + (2 * PLYWOOD_THICKNESS); // Width accounts for side panel assembly
+    const plywoodBoxL = L; 
+    const plywoodBoxW = W + (2 * PLYWOOD_THICKNESS); 
 
     // 2x4s for Feet (run along the width of the crate)
     const feet2x4Length = 3 * plywoodBoxW;
@@ -141,31 +154,23 @@ const App = () => {
     // User-added bracing
     const bracing2x4Length = bracingList.reduce((sum, piece) => sum + (piece.length * piece.quantity), 0);
     
-    // Total 2x4 Length (No internal cleats)
     const total2x4LengthInches = feet2x4Length + bracing2x4Length;
 
-    // Board Footage
     const boardFootage = (total2x4LengthInches * TWOBYFOUR_NOMINAL_THICKNESS * TWOBYFOUR_NOMINAL_WIDTH) / 144;
 
     // Plywood Material Calculation (for weight)
-    // Area of Front/Back panels (Internal L x Internal H)
     const areaFrontBack = 2 * L * H;
-    // Area of Side panels (Internal W x Internal H)
     const areaSides = 2 * W * H;
-    // Area of Top/Bottom panels (Internal L x Plywood Box Width)
     const areaTopBottom = 2 * L * plywoodBoxW;
-    // Area of Skids (run along the length of the crate)
     const areaSkids = 2 * plywoodBoxL * SKID_PLYWOOD_WIDTH; 
     
     const totalPlywoodAreaSqIn = areaFrontBack + areaSides + areaTopBottom + areaSkids;
     const totalPlywoodAreaSqFt = totalPlywoodAreaSqIn / 144;
     const cratePlywoodWeight = totalPlywoodAreaSqFt * PLYWOOD_WEIGHT_PER_SQ_FT;
 
-    // 2x4 Material Weight
     const total2x4LengthFt = total2x4LengthInches / 12;
     const crate2x4Weight = total2x4LengthFt * TWOBYFOUR_WEIGHT_PER_LINEAL_FOOT;
 
-    // Projected Total Weight
     const projTotalWeight = initialCargoWeight + cratePlywoodWeight + crate2x4Weight;
     
     setOutputs({
