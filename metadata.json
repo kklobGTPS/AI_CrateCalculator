@@ -1,0 +1,6 @@
+{
+  "description": "A web application to help warehouse teams calculate dimensions and materials for building wooden crates, including 2x4s and plywood. It estimates external dimensions, total weight, and board footage.",
+  "prompt": "I want to build an app that helps the warehouse team build crates. We have 2x4s as well as 5/8\" thick plywood. The general design is having the length be the longest sides (front/back) and the sides overlap them. Additionally, there are 3x 2x4s used as feet (left, right, center) as well as 2x strips of plywood used as skids perpendicularly laid across the 2x4 feet. The input required should be L x W x H required and rough estimated weight. Additionally, we need to take note of any additional 2x4s used to brace the inside of the crate. Therefore make an additional area to add different lengths and quantities of 2x4s. There should be an output that shows the rounded up projected external dimensions and weight as well as the board footage (board footage = total 2x4 length for full crate including bracing * 2 * 4 / 144) Round to the nearest hundredth. It should be easy to use and reset back to blank for the next crate. Keep it simple UI and ensure the end result can be hosted as a GitHub Page for easy use.",
+  "requestFramePermissions": [],
+  "name": "App"
+}
